@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logic Converter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: tomato;
+        height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative; /* Add relative positioning */
+      }
+
+      .converter {
+        background-color: lightblue;
+        padding: 5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        max-width: 600px;
+        width: 90%;
+        border: 2px solid #000000;
+        border-radius: 15px;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        color: red;
+        font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
+          sans-serif;
+      }
+
+      input[type="text"],
+      select,
+      button {
+        padding: 8px;
+        margin: 10px;
+        width: 100%;
+        box-sizing: border-box;
+        max-width: 300px;
+      }
+
+      button {
+        background-color: #1e481f;
+        color: white;
+        border: 2px solid transparent;
+        cursor: pointer;
+        width: auto;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+        padding: 12px 20px;
+        font-size: 1.2em;
+      }
+
+      button:hover {
+        background-color: rgb(0, 0, 0);
+        color: #ffffff;
+        border-color: #ffffff;
+      }
+
+      .attribution {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .attribution span {
+        color: rgb(71, 29, 29);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="converter">
+      <h1>Propositional Logic Converter</h1>
+      <label for="expression">Enter Logical Expression:</label>
+      <input type="text" id="expression" placeholder="Enter expression" />
+      <select id="conversion-type">
+        <option value="dual">Compute Dual</option>
+        <option value="set">Convert to Set Notation</option>
+        <option value="boolean">Convert to Boolean Expression</option>
+      </select>
+      <button id="convert-button">Convert</button>
+      <div id="output"></div>
+    </div>
+
+    <p class="attribution">
+      Discrete Project Created by
+      <span>Andrew Sem Tetteh & Bernard Lomotey Agbloe</span>
+    </p>
+
+    <script>
+      // Define constants for DOM elements
+      const expressionInput = document.getElementById("expression");
+      const conversionTypeSelect = document.getElementById("conversion-type");
+      const convertButton = document.getElementById("convert-button");
+      const outputDiv = document.getElementById("output");
+
+      // Function to convert the input expression based on the selected type
+      function convertExpression(expression, type) {
+        try {
+          let result;
+          switch (type) {
+            case "dual":
+              result = computeDual(expression);
+              break;
+            case "set":
+              result = convertToSetNotation(expression);
+              break;
+            case "boolean":
+              result = convertToBooleanAlgebra(expression);
+              break;
+            default:
+              throw new Error("Invalid conversion type selected");
+          }
+          return result;
+        } catch (error) {
+          console.error("Error during conversion:", error.message);
+          // Display user-friendly error message based on error type
+          let errorMessage;
+          if (error.message.includes("invalid character")) {
+            errorMessage =
+              "Invalid character encountered: " + error.message.split(": ")[1];
+          } else if (error.message.includes("unbalanced parentheses")) {
+            errorMessage = error.message;
+          } else if (error.message.includes("invalid syntax")) {
+            // Example for generic conversion error
+            errorMessage = "Conversion failed: Invalid expression syntax.";
+          } else {
+            errorMessage =
+              "An error occurred during conversion. Please check your expression.";
+          }
+          alert(errorMessage); // Or display error message in outputDiv
+          return null; // Indicate error during conversion
+        }
+      }
+
+      // Function to compute the dual of a logical expression
+      function computeDual(expression) {
+        const negationPattern = /¬\(([^)]+)\)/g; // Matches negation within parentheses
+        const standaloneNegationPattern = /¬([a-z])/g; // Matches standalone negation followed by variable
+        const operatorPattern = /(\∧|\∨)/g; // Matches operators
+
+        // Replacement functions
+        const replaceNegation = (match, subExpr) => `(${computeDual(subExpr)})`; // Handle negation within parentheses
+        const replaceStandaloneNegation = (match, variable) => `¬(${variable})`; // Handle standalone negation
+        const replaceOperator = (match) => (match === "∧" ? "∨" : "∧"); // Swap operators
+        const replaceFT = (match) => (match === "F" ? "T" : "F"); // Replace F with T and vice versa
+
+        // Apply replacements in sequence
+        return expression
+          .replace(replaceFT, expression) // Replace F/T first (outermost level)
+          .replace(standaloneNegationPattern, replaceStandaloneNegation)
+          .replace(negationPattern, replaceNegation)
+          .replace(operatorPattern, replaceOperator);
+      }
+
+      // Function to convert the expression to set notation
+      function convertToSetNotation(expression) {
+        const variables = {
+          T: "U", // Represents false as the universal set
+          F: "∅", // Represents true as an empty
+        };
+        const operators = {
+          "∧": "∩", // Represents logical AND as set intersection
+          "∨": "∪", // Represents logical OR as set union
+          "¬": "̅", // Represents negation as set complement
+        };
+        let newExpression = "";
+        for (let char of expression) {
+          newExpression += variables[char] || operators[char] || char;
+        }
+        return newExpression;
+      }
+
+      // Function to convert the expression to boolean algebra notation
+      function convertToBooleanAlgebra(expression) {
+        const operators = {
+          "∧": "⋅", // Represent logical AND as multiplication
+          "∨": "+", // Represent logical OR as addition
+          "¬": "̅", // Represent negation with complement
+        };
+        let newExpression = "";
+        for (let char of expression) {
+          newExpression += operators[char] || char;
+        }
+        return newExpression;
+      }
+
+      // Event listener for convert button click (consolidated)
+      convertButton.addEventListener("click", () => {
+        const expression = expressionInput.value.trim();
+
+        // Error Handling. Check for empty input and prompt if necessary
+        if (!expression) {
+          alert("Please enter a logical expression!");
+          return;
+        }
+
+        const type = conversionTypeSelect.value;
+        const result = convertExpression(expression, type);
+        const conversionType =
+          conversionTypeSelect.options[conversionTypeSelect.selectedIndex].text;
+
+        // Set output text with red color
+        outputDiv.textContent = `The ${conversionType} of the expression "${expression}" is: ${result}`;
+        outputDiv.style.color = "red"; // Apply red color to the output text
+      });
+    </script>
+  </body>
+</html>
